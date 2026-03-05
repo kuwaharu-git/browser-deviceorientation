@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Device Orientation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #0f0f14;
+      color: #f0f0f0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 24px;
+    }
+
+    h1 { font-size: 1.2rem; letter-spacing: 0.1em; color: #aaa; }
+
+    /* 3D Box visualization */
+    .scene {
+      width: 160px;
+      height: 160px;
+      perspective: 400px;
+    }
+    .box {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+      transition: transform 0.1s linear;
+    }
+    .face {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border: 2px solid rgba(100, 200, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      background: rgba(100, 200, 255, 0.07);
+    }
+    .face.front  { transform: translateZ(80px); }
+    .face.back   { transform: rotateY(180deg) translateZ(80px); }
+    .face.left   { transform: rotateY(-90deg) translateZ(80px); }
+    .face.right  { transform: rotateY(90deg)  translateZ(80px); }
+    .face.top    { transform: rotateX(90deg)  translateZ(80px); }
+    .face.bottom { transform: rotateX(-90deg) translateZ(80px); }
+
+    /* Values display */
+    .values {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .val-card {
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .val-label {
+      font-size: 0.7rem;
+      color: #888;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .val-number {
+      font-size: 1.6rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: #64c8ff;
+    }
+    .val-unit { font-size: 0.65rem; color: #666; margin-top: 4px; }
+
+    /* Permission button */
+    #permission-btn {
+      display: none;
+      padding: 14px 28px;
+      background: #64c8ff;
+      color: #000;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #permission-btn:active { opacity: 0.7; }
+
+    #status {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>DEVICE ORIENTATION</h1>
+
+  <div class="scene">
+    <div class="box" id="box">
+      <div class="face front">FRONT</div>
+      <div class="face back">BACK</div>
+      <div class="face left">LEFT</div>
+      <div class="face right">RIGHT</div>
+      <div class="face top">TOP</div>
+      <div class="face bottom">BOTTOM</div>
+    </div>
+  </div>
+
+  <div class="values">
+    <div class="val-card">
+      <div class="val-label">α  (Z軸)</div>
+      <div class="val-number" id="val-alpha">—</div>
+      <div class="val-unit">方位 deg</div>
+    </div>
+    <div class="val-card">
+      <div class="val-label">β  (X軸)</div>
+      <div class="val-number" id="val-beta">—</div>
+      <div class="val-unit">前後傾き deg</div>
+    </div>
+    <div class="val-card">
+      <div class="val-label">γ  (Y軸)</div>
+      <div class="val-number" id="val-gamma">—</div>
+      <div class="val-unit">左右傾き deg</div>
+    </div>
+  </div>
+
+  <button id="permission-btn">センサーを有効にする</button>
+  <p id="status">センサーデータを待っています…</p>
+
+  <script>
+    const box = document.getElementById('box');
+    const elAlpha = document.getElementById('val-alpha');
+    const elBeta  = document.getElementById('val-beta');
+    const elGamma = document.getElementById('val-gamma');
+    const statusEl = document.getElementById('status');
+    const permBtn  = document.getElementById('permission-btn');
+
+    function fmt(v) {
+      return v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(1);
+    }
+
+    function onOrientation(e) {
+      const { alpha, beta, gamma } = e;
+
+      elAlpha.textContent = fmt(alpha);
+      elBeta.textContent  = fmt(beta);
+      elGamma.textContent = fmt(gamma);
+
+      // Rotate box: CSS rotateX = beta (tilt fwd/back), rotateY = gamma (tilt left/right), rotateZ = -alpha (compass)
+      const a = alpha ?? 0;
+      const b = beta  ?? 0;
+      const g = gamma ?? 0;
+      box.style.transform = `rotateX(${b}deg) rotateY(${g}deg) rotateZ(${-a}deg)`;
+
+      statusEl.textContent = 'センサー受信中 ✓';
+    }
+
+    function startListening() {
+      window.addEventListener('deviceorientation', onOrientation, true);
+    }
+
+    // iOS 13+ requires explicit permission
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      permBtn.style.display = 'inline-block';
+      statusEl.textContent  = 'ボタンを押してセンサーを有効にしてください';
+
+      permBtn.addEventListener('click', async () => {
+        try {
+          const state = await DeviceOrientationEvent.requestPermission();
+          if (state === 'granted') {
+            permBtn.style.display = 'none';
+            startListening();
+          } else {
+            statusEl.textContent = 'センサーの使用が拒否されました';
+          }
+        } catch (err) {
+          statusEl.textContent = 'エラー: ' + err.message;
+        }
+      });
+    } else if ('DeviceOrientationEvent' in window) {
+      startListening();
+    } else {
+      statusEl.textContent = 'このブラウザはデバイスの傾き取得に対応していません';
+    }
+  </script>
+</body>
+</html>
