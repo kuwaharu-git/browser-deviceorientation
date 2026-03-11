@@ -38,14 +38,15 @@
         gammaElement.textContent = `gamma: ${gamma.toFixed(2)}`;
 
         // ここでシェイクを検出するロジックを実装
-        if (gamma > 75) {
+        const threshold = 50; // シェイクとみなす傾きの閾値
+        if (gamma > threshold) {
             rightSide = true;
             if (leftSide) {
                 shakeCount++;
                 shakeCountElement.textContent = shakeCount;
                 leftSide = false; // フラグをリセット
             }
-        } else if (gamma < -75) {
+        } else if (gamma < -threshold) {
             leftSide = true;
             if (rightSide) {
                 shakeCount++;
