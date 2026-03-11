@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>shake count demo</title>
+  </head>
+  <body>
+    <h1>シェイクカウンター</h1>
+    <button id="permission-btn">センサーを有効にする</button>
+    <p id="status"></p>
+    <p id="sensor">
+        <p id="alpha"></p>
+        <p id="beta"></p>
+        <p id="gamma"></p>
+    </p>
+    <p>シェイク回数: <span id="shake-count">0</span></p>
+
+    <script>
+    // dom要素取得
+    const permBtn  = document.getElementById('permission-btn');
+    const alphaElement = document.getElementById('alpha');
+    const betaElement = document.getElementById('beta');
+    const gammaElement = document.getElementById('gamma');
+    const statusEl = document.getElementById('status');
+    const shakeCountElement = document.getElementById('shake-count');
+
+    let shakeCount = 0;
+    // シェイクの方向を判定するためのフラグ
+    let leftSide = false;
+    let rightSide = false;
+
+      function onOrientation(e) {
+        const { alpha, beta, gamma } = e;
+        console.log(alpha, beta, gamma);
+        alphaElement.textContent = `alpha: ${alpha.toFixed(2)}`;
+        betaElement.textContent = `beta: ${beta.toFixed(2)}`;
+        gammaElement.textContent = `gamma: ${gamma.toFixed(2)}`;
+
+        // ここでシェイクを検出するロジックを実装
+        if (gamma > 75) {
+            rightSide = true;
+            if (leftSide) {
+                shakeCount++;
+                shakeCountElement.textContent = shakeCount;
+                leftSide = false; // フラグをリセット
+            }
+        } else if (gamma < -75) {
+            leftSide = true;
+            if (rightSide) {
+                shakeCount++;
+                shakeCountElement.textContent = shakeCount;
+                rightSide = false; // フラグをリセット
+            }
+        }
+
+      }
+      function startListening() {
+        window.addEventListener("deviceorientation", onOrientation, true);
+      }
+
+
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
+        permBtn.style.display = "inline-block";
+        statusEl.textContent = "ボタンを押してセンサーを有効にしてください";
+
+        permBtn.addEventListener("click", async () => {
+          try {
+            const state = await DeviceOrientationEvent.requestPermission();
+            if (state === "granted") {
+              permBtn.style.display = "none";
+              startListening();
+            } else {
+              statusEl.textContent = "センサーの使用が拒否されました";
+            }
+          } catch (err) {
+            statusEl.textContent = "エラー: " + err.message;
+          }
+        });
+      } else if ("DeviceOrientationEvent" in window) {
+        startListening();
+      } else {
+        statusEl.textContent =
+          "このブラウザはデバイスの傾き取得に対応していません";
+      }
+    </script>
+  </body>
+</html>
