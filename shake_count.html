@@ -15,6 +15,7 @@
         <p id="gamma"></p>
     </p>
     <p>シェイク回数: <span id="shake-count">0</span></p>
+    <p id="interval"></p>
 
     <script>
     // dom要素取得
@@ -24,13 +25,21 @@
     const gammaElement = document.getElementById('gamma');
     const statusEl = document.getElementById('status');
     const shakeCountElement = document.getElementById('shake-count');
+    const intervalElement = document.getElementById('interval');
 
     let shakeCount = 0;
     // シェイクの方向を判定するためのフラグ
     let leftSide = false;
     let rightSide = false;
+    let lastTime = Date.now();
 
       function onOrientation(e) {
+        const currentTime = Date.now();
+        console.log(`センサーの間隔: ${currentTime - lastTime} ms`);
+        intervalElement.textContent = `センサーの間隔: ${currentTime - lastTime} ms`;
+
+
+        lastTime = currentTime;
         const { alpha, beta, gamma } = e;
         console.log(alpha, beta, gamma);
         alphaElement.textContent = `alpha: ${alpha.toFixed(2)}`;
